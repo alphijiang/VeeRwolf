@@ -1,7 +1,7 @@
 VeeRwolf
 ========
 
-VeeRwolf is a [FuseSoC](https://github.com/olofk/fusesoc)-based reference platform for the VeeR family of RISC-V cores. [VeeR EH1](https://github.com/chipsalliance/Cores-VeeR-EH1) and [VeeR EL2](https://github.com/chipsalliance/Cores-VeeR-EL2) remain supported as upstream. This V21 integration also adds [VeeR EH2 1.4](https://github.com/chipsalliance/Cores-VeeR-EH2) to the Nexys A7 target. See [CPU configuration](#cpu-configuration) to learn how to switch between them.
+VeeRwolf is a [FuseSoC](https://github.com/olofk/fusesoc)-based reference platform for the VeeR family of RISC-V cores. [VeeR EH1](https://github.com/chipsalliance/Cores-VeeR-EH1) and [VeeR EL2](https://github.com/chipsalliance/Cores-VeeR-EL2) remain supported as upstream. This fork integration also adds [VeeR EH2](https://github.com/chipsalliance/Cores-VeeR-EH2) to the Nexys A7 target. See [CPU configuration](#cpu-configuration) to learn how to switch between them.
 
 This can be used to run the [RISC-V compliance tests](https://github.com/riscv/riscv-compliance), [Zephyr OS](https://www.zephyrproject.org), [TockOS](https://github.com/tock/tock/tree/master/boards/swervolf) or other software in simulators or on FPGA boards. Focus is on portability, extendability and ease of use; to allow VeeR users to quickly get software running, modify the SoC to their needs or port it to new target devices.
 
