@@ -1,7 +1,7 @@
 VeeRwolf
 ========
 
-VeeRwolf is a [FuseSoC](https://github.com/olofk/fusesoc)-based reference platform for the VeeR family of RISC-V cores. [VeeR EH1](https://github.com/chipsalliance/Cores-VeeR-EH1) and [VeeR EL2](https://github.com/chipsalliance/Cores-VeeR-EL2) remain supported as upstream. This V21 integration also adds [VeeR EH2 1.4](https://github.com/chipsalliance/Cores-VeeR-EH2) to the Nexys A7 target. See [CPU configuration](#cpu-configuration) to learn how to switch between them.
+VeeRwolf is a [FuseSoC](https://github.com/olofk/fusesoc)-based reference platform for the VeeR family of RISC-V cores. [VeeR EH1](https://github.com/chipsalliance/Cores-VeeR-EH1) and [VeeR EL2](https://github.com/chipsalliance/Cores-VeeR-EL2) remain supported as upstream. This fork integration also adds [VeeR EH2](https://github.com/chipsalliance/Cores-VeeR-EH2) to the Nexys A7 target. See [CPU configuration](#cpu-configuration) to learn how to switch between them.
 
 This can be used to run the [RISC-V compliance tests](https://github.com/riscv/riscv-compliance), [Zephyr OS](https://www.zephyrproject.org), [TockOS](https://github.com/tock/tock/tree/master/boards/swervolf) or other software in simulators or on FPGA boards. Focus is on portability, extendability and ease of use; to allow VeeR users to quickly get software running, modify the SoC to their needs or port it to new target devices.
 
@@ -209,7 +209,7 @@ Create an empty directory, e.g. named veerwolf, to use as the root of the projec
 
 1. Make sure you have [FuseSoC](https://github.com/olofk/fusesoc) version 1.12 or newer installed or install it with `pip install fusesoc`
 2. Add the FuseSoC base library to the workspace with `fusesoc library add fusesoc-cores https://github.com/fusesoc/fusesoc-cores`
-3. Add the veerwolf library with `fusesoc library add veerwolf https://github.com/chipsalliance/VeeRwolf`
+3. Add the veerwolf library with `fusesoc library add veerwolf https://github.com/alphijiang/VeeRwolf`
 4. Make sure you have verilator installed to run the simulation. **Note** This requires at least version 3.918. The version that is shipped with Ubuntu 18.04 will NOT work
 
 Your workspace shall now look like this:
@@ -604,9 +604,4 @@ their asynchronous hold checks; it does not hide setup paths with a broad
 clock-group waiver. LiteDRAM initialization status is synchronized through
 two core-clock flip-flops before syscon samples it.
 
-Detailed build, DRC and debug instructions are in
-[`EH2_NEXYS_A7_BUILD.md`](EH2_NEXYS_A7_BUILD.md).
 
-The RTL-derived system diagrams are available as editable SVG and rendered
-PNG files under `docs/`: `veerwolf-eh2-system-block-diagram` and
-`veerwolf-eh2-architecture-reference`.
