@@ -209,7 +209,7 @@ Create an empty directory, e.g. named veerwolf, to use as the root of the projec
 
 1. Make sure you have [FuseSoC](https://github.com/olofk/fusesoc) version 1.12 or newer installed or install it with `pip install fusesoc`
 2. Add the FuseSoC base library to the workspace with `fusesoc library add fusesoc-cores https://github.com/fusesoc/fusesoc-cores`
-3. Add the veerwolf library with `fusesoc library add veerwolf https://github.com/chipsalliance/VeeRwolf`
+3. Add the veerwolf library with `fusesoc library add veerwolf https://github.com/alphijiang/VeeRwolf`
 4. Make sure you have verilator installed to run the simulation. **Note** This requires at least version 3.918. The version that is shipped with Ubuntu 18.04 will NOT work
 
 Your workspace shall now look like this:
