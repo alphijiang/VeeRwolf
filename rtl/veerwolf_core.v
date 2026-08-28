@@ -457,7 +457,7 @@ module veerwolf_core
       .ifu_axi_bvalid   (1'b0),
       .ifu_axi_bready   (),
       .ifu_axi_bresp    (2'b00),
-      .ifu_axi_bid      (3'd0),
+      .ifu_axi_bid      ('0),
 
       .ifu_axi_arvalid  (ifu_arvalid ),
       .ifu_axi_arready  (ifu_arready ),

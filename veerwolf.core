@@ -12,6 +12,10 @@ filesets:
     files: [rtl/veer_el2_wrapper.sv : {file_type : systemVerilogSource}]
     depend: ["=chipsalliance.org:cores:VeeR_EL2:1.4"]
 
+  eh2:
+    files: [rtl/veer_eh2_wrapper.sv : {file_type : systemVerilogSource}]
+    depend: ["=chipsalliance.org:cores:VeeR_EH2:1.4"]
+
   core:
     files:
       - rtl/dpram64.v
@@ -61,12 +65,13 @@ filesets:
 
   nexys_a7_files:
     files :
-      - data/vivado_waiver.tcl : {file_type : tclSource}
       - data/veerwolf_nexys.xdc : {file_type : xdc}
       - rtl/clk_gen_nexys.v : {file_type : verilogSource}
-      - rtl/bscan_tap.sv    : {file_type : systemVerilogSource}
       - rtl/veerwolf_nexys.v    : {file_type : systemVerilogSource}
     depend : [":veerwolf:litedram"]
+
+  nexys_a7_upstream_waiver:
+    files: [data/vivado_waiver.tcl : {file_type : tclSource}]
 
   nexys_video_files:
     files :
@@ -148,6 +153,22 @@ targets:
         mode: lint-only
     toplevel : veerwolf_core
 
+  lint_eh2:
+    default_tool : verilator
+    description : Run static code checks with the dual-hart VeeR EH2 1.4 core
+    filesets :
+      - eh2
+      - core
+      - bootrom
+      - "tool_verilator? (verilator_waiver)"
+    generate : [intercon_eh2, wb_intercon]
+    parameters : [rom_init_file]
+    tools:
+      verilator:
+        mode: lint-only
+        verilator_options : [-Wno-fatal]
+    toplevel : veerwolf_core
+
   sim:
     default_tool : verilator
     description : Default simulation target
@@ -187,6 +208,24 @@ targets:
         xelab_options : [-d, XSIM]
     toplevel : veerwolf_core_tb
 
+  sim_eh2:
+    default_tool : verilator
+    description : Simulation target with the dual-hart VeeR EH2 1.4 core
+    filesets :
+      - eh2
+      - core
+      - "!tool_verilator? (bfm)"
+      - tb
+      - bootrom
+      - "tool_verilator? (verilator_tb)"
+      - "tool_verilator? (verilator_waiver)"
+    generate : [intercon_eh2, wb_intercon]
+    parameters : [SIMPRINT=true, jtag_vpi_enable, ram_init_file=hello.vh, rom_init_file, signature, timeout, vcd]
+    tools:
+      verilator:
+        verilator_options : [--trace, -Wno-fatal]
+    toplevel : veerwolf_core_tb
+
   spi_tb:
     default_tool : modelsim
     description : Simulation target with real SPI Flash model
@@ -217,15 +256,26 @@ targets:
 
   nexys_a7:
     default_tool : vivado
-    description : FPGA image with VeeR EH1 or EL2 for the Digilent Nexys A7 FPGA board
+    description : FPGA image with VeeR EH1, EL2 or EH2 for the Digilent Nexys A7 FPGA board
     filesets :
-      - "cpu_el2? (el2)"
-      - "!cpu_el2? (eh1)"
+      - "cpu_eh2? (eh2)"
+      - "!cpu_eh2? (cpu_el2? (el2))"
+      - "!cpu_eh2? (!cpu_el2? (eh1))"
       - bootrom
       - core
       - nexys_a7_files
-    generate : [intercon, "!cpu_el2? (veer_eh1_default_config)", "cpu_el2? (veer_el2_nexys_a7_config)", version, wb_intercon]
-    parameters : [bootrom_file, "cpu_el2? (cpu_type=EL2)"]
+      - "!cpu_eh2? (nexys_a7_upstream_waiver)"
+    generate :
+      - "cpu_eh2? (intercon_eh2)"
+      - "!cpu_eh2? (intercon)"
+      - "!cpu_eh2? (!cpu_el2? (veer_eh1_default_config))"
+      - "!cpu_eh2? (cpu_el2? (veer_el2_nexys_a7_config))"
+      - "!cpu_eh2? (version)"
+      - wb_intercon
+    parameters :
+      - bootrom_file
+      - "!cpu_eh2? (cpu_el2? (cpu_type=EL2))"
+      - "cpu_eh2? (cpu_type=EH2)"
     tools:
       vivado: {part : xc7a100tcsg324-1}
     toplevel : veerwolf_nexys_a7
@@ -303,6 +353,26 @@ generate:
           offset : 0x00000000
           size   : 0x08000000 #128MiB
 
+  intercon_eh2:
+    generator: axi_intercon_gen
+    parameters:
+      masters:
+        ifu:
+          # EH2 1.4 is generated with a four-bit IFU transaction tag.
+          id_width : 4
+          read_only : true
+        lsu:
+          id_width : 4
+        sb:
+          id_width : 1
+      slaves:
+        io:
+          offset : 0x80000000
+          size   : 0x00004000
+        ram:
+          offset : 0x00000000
+          size   : 0x08000000 #128MiB
+
   veer_eh1_default_config:
     generator: veer_eh1_config
     position : first
@@ -365,7 +435,7 @@ parameters:
 
   cpu_type:
     datatype    : str
-    description : Controls whether to use VeeR EH1 or VeeR EL2. Implicitly set by the target
+    description : Controls whether to use VeeR EH1, VeeR EH2 or VeeR EL2. Implicitly set by the target
     paramtype   : vlogparam
 
   mem_clear:
