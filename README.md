@@ -560,16 +560,7 @@ generator format and maps `.text` to ICCM and `.data`/`.bss` to DCCM. ICCM is
 the intended high-speed instruction memory on this resource-constrained
 target. External DDR2 instruction fetches remain uncached in this Version.
 
-V19 experimentally enabled the official 8 KiB, four-way instruction cache.
-The cache was generated correctly, including eight RAMB36 data banks and LUTRAM
-tag arrays, but Vivado placement required 14,530 slices while only 14,351 were
-available for placement. The preceding no-cache build already consumed 98.19%
-of physical slices. The therefore disables the instruction cache through the
-official generator instead of attempting a placement directive or manually
-editing generated cache parameters. A larger FPGA target such as Genesys 2 is
-required before re-enabling and qualifying the cache.
-`LSU_STBUF_DEPTH` is four in both generated configuration headers; depth two
-is invalid for this dual-thread configuration and stalls stores.
+
 
 The official `default_mt` generator value `LOAD_TO_USE_PLUS1=0` is retained.
 RTL inspection confirms that this parameter selects the DCCM load latency:
