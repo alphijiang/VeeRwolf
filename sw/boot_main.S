@@ -6,6 +6,7 @@
 #define RAM_INIT_DONE 0x8000100A
 #define CLK_FREQ_HZ   0x8000103C
 #define UART_BASE     0x80002000
+#define ICCM_BASE     0xEE000000
 
 #define BAUD_RATE 115200
 
@@ -65,7 +66,7 @@ _start:
 	00 = boot from SPI Flash
 	01 = boot from serial
 	10 = boot from RAM (jump to address 0)
-	11 = Not defined
+	11 = boot from ICCM (jump to address 0xEE000000)
 
 	*/
 	li	t1, GPIO_BASE
@@ -73,20 +74,21 @@ _start:
 	srli	t2, t2, 14
 
 	/* Boot mode 0 */
-	addi	t3, zero, 0
-	beq	t2, t3, prepare_spi_boot
+	beqz	t2, prepare_spi_boot
 
 	/* Boot mode 1 */
-	addi	t3, t3, 1
+	li	t3, 1
 	beq	t2, t3, prepare_serial_boot
 
 	/* Boot mode 2 */
-	addi	t3, t3, 1
+	li	t3, 2
 	beq	t2, t3, ram_boot
 
-	la	a5, boot_mode_fail_str
+	/* Boot mode 3 */
+	la	a5, iccm_boot_str
 	jal	uart_writestr
-	j	boot_fail
+	li	t0, ICCM_BASE
+	jr	t0
 
 prepare_spi_boot:
 	la	a5, spi_boot_str
@@ -165,5 +167,5 @@ serial_boot_str:
 	.string "Booting from serial\r\n"
 ram_boot_str:
 	.string "Booting from RAM\r\n"
-boot_mode_fail_str:
-	.string "Unknown boot mode\r\n"
+iccm_boot_str:
+	.string "Booting from ICCM\r\n"

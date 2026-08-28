@@ -1,0 +1,12 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/* Optional VeeR EH2 Nexys clock override. Pass this file explicitly through
+ * DTC_OVERLAY_FILE; the upstream board DTS remains unchanged for EH1/EL2.
+ */
+&{/cpus/cpu@0} {
+	clock-frequency = <40000000>;
+};
+
+&uart0 {
+	clock-frequency = <40000000>;
+};

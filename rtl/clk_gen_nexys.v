@@ -25,19 +25,20 @@ module clk_gen_nexys
   (input  i_clk,
    input      i_rst,
    output     o_clk_core,
-   output reg o_rst_core);
+   output     o_rst_core);
 
    parameter CPU_TYPE = "";
 
    wire   clkfb;
    wire   locked;
-   reg 	  locked_r;
+   (* ASYNC_REG = "TRUE" *) reg [2:0] reset_sync;
 
    PLLE2_BASE
      #(.BANDWIDTH("OPTIMIZED"),
        .CLKFBOUT_MULT(16),
        .CLKIN1_PERIOD(10.0), //100MHz
-       .CLKOUT0_DIVIDE((CPU_TYPE == "EL2") ? 64 : 32),
+       .CLKOUT0_DIVIDE((CPU_TYPE == "EL2") ? 64 :
+                       (CPU_TYPE == "EH2") ? 40 : 32),
        .DIVCLK_DIVIDE(1),
        .STARTUP_WAIT("FALSE"))
    PLLE2_BASE_inst
@@ -54,9 +55,15 @@ module clk_gen_nexys
       .RST(i_rst),
       .CLKFBIN(clkfb));
 
-   always @(posedge o_clk_core) begin
-      locked_r <= locked;
-      o_rst_core <= !locked_r;
+   // Assert reset immediately when the PLL loses lock, then release it only
+   // after three valid core-clock edges.
+   always @(posedge o_clk_core or negedge locked) begin
+      if (!locked)
+        reset_sync <= 3'b111;
+      else
+        reset_sync <= {reset_sync[1:0], 1'b0};
    end
+
+   assign o_rst_core = reset_sync[2];
 
 endmodule

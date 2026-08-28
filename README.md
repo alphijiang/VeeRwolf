@@ -1,7 +1,7 @@
 VeeRwolf
 ========
 
-VeeRwolf is a [FuseSoC](https://github.com/olofk/fusesoc)-based reference platform for the VeeR family of RISC-V cores. Currently, [VeeR EH1](https://github.com/chipsalliance/Cores-VeeR-EH1) and [VeeR EL2](https://github.com/chipsalliance/Cores-VeeR-EL2) are supported. See [CPU configuration](#cpu-configuration) to learn how to switch between them.
+VeeRwolf is a [FuseSoC](https://github.com/olofk/fusesoc)-based reference platform for the VeeR family of RISC-V cores. [VeeR EH1](https://github.com/chipsalliance/Cores-VeeR-EH1) and [VeeR EL2](https://github.com/chipsalliance/Cores-VeeR-EL2) remain supported as upstream. This V21 integration also adds [VeeR EH2 1.4](https://github.com/chipsalliance/Cores-VeeR-EH2) to the Nexys A7 target. See [CPU configuration](#cpu-configuration) to learn how to switch between them.
 
 This can be used to run the [RISC-V compliance tests](https://github.com/riscv/riscv-compliance), [Zephyr OS](https://www.zephyrproject.org), [TockOS](https://github.com/tock/tock/tree/master/boards/swervolf) or other software in simulators or on FPGA boards. Focus is on portability, extendability and ease of use; to allow VeeR users to quickly get software running, modify the SoC to their needs or port it to new target devices.
 
@@ -120,7 +120,7 @@ Memory files suitable for loading with `--ram_init_file` can be created from bin
 
 ## VeeRwolf Nexys
 
-VeeRwolf Nexys is a version of the VeeRwolf SoC created for the Digilent Nexys A7 board. It uses the on-board 128MB DDR2 for RAM, has GPIO connected to LED, supports booting from SPI Flash and uses the microUSB port for UART and JTAG communication. The default bootloader for the VeeRwolf Nexys target will attempt to load a program stored in SPI Flash by default.
+VeeRwolf Nexys is a version of the VeeRwolf SoC created for the Digilent Nexys A7 board. It uses the on-board 128MB DDR2 for RAM, has GPIO connected to LED, supports booting from SPI Flash and uses the microUSB port for UART and FPGA programming. In this integration, CPU debug JTAG is exposed on Pmod JC for EH1, EH2 and EL2 through the official Cores-VeeR `dmi_wrapper`. The default bootloader for the VeeRwolf Nexys target will attempt to load a program stored in SPI Flash by default.
 
 ![](veerwolf_nexys.png)
 
@@ -128,7 +128,8 @@ VeeRwolf Nexys is a version of the VeeRwolf SoC created for the Digilent Nexys A
 
 ### I/O
 
-The active on-board I/O consists of a LED, a switch and the microUSB connector for UART, JTAG and power.
+The active I/O consists of LEDs, switches, the microUSB connector for UART,
+FPGA programming and power, plus Pmod JC for external CPU debug JTAG.
 
 #### LEDs
 
@@ -145,13 +146,17 @@ During boot up, the two topmost switches (sw14, sw15) control the boot mode.
 |  off |  off | Boot from SPI Flash        |
 |  off |   on | Boot from serial           |
 |   on |  off | Boot from address 0 in RAM |
-|   on |   on | Undefined                  |
+|   on |   on | Boot from ICCM at `0xEE000000` |
 
 *Note: Switch 0 has a dual purpose and selects whether to output serial communication from the SoC (0=off) or from the embedded self-test program in the DDR2 controller (1=on).*
 
 #### micro USB
 
-UART and JTAG communication is tunneled through the microUSB port on the board and will appear as `/dev/ttyUSB0`, `/dev/ttyUSB1` or similar depending on OS configuration. A terminal emulator can be used to connect to the UART (e.g. by running `screen /dev/ttyUSB0 115200`) and OpenOCD can connect to the JTAG port to program the FPGA or connect the debug proxy. The [debugging](#debugging) chapter goes into more detail on how to connect a debugger.
+The microUSB port provides UART, FPGA programming and board power. The serial
+port appears as `/dev/ttyUSB0`, `/dev/ttyUSB1` or similar; a terminal emulator
+can connect at 115200 baud. CPU debug does not use the on-board BSCAN tunnel in
+this integration; connect the external FT232H to Pmod JC as described in the
+[debugging](#debugging) chapter.
 
 #### SPI Flash
 
@@ -184,7 +189,7 @@ During boot up, the two topmost switches (sw14, sw15) control the boot mode.
 |  off |  off | Boot from SPI Flash        |
 |  off |   on | Boot from serial           |
 |   on |  off | Boot from address 0 in RAM |
-|   on |   on | Undefined                  |
+|   on |   on | Boot from ICCM at `0xEE000000` |
 
 #### micro USB
 
@@ -358,14 +363,22 @@ VeeRwolf supports debugging both on hardware and in simulation. There are differ
 
 ### Prerequisites
 
-Install the RISC-V-specific version of OpenOCD. (The OpenOCD code shall be no older than commit 22d771d2 from Sep 14, 2020.)
+Install the [alphijiang OpenOCD fork](https://github.com/alphijiang/openocd).
+This version contains the EH2 ICCM abstract-memory changes used by this
+project, including 8-, 16- and 32-bit ICCM reads and writes:
 
-    git clone https://github.com/riscv/riscv-openocd
-    cd riscv-openocd
+    git clone https://github.com/alphijiang/openocd.git
+    cd openocd
     ./bootstrap
     ./configure --enable-jtag_vpi --enable-ftdi
     make
     sudo make install
+
+The ICCM width adaptation is implemented in OpenOCD; it does not change the
+EH2 ICCM RTL interface. Subword debug access is required when GDB, Eclipse or
+another IDE inserts, reads back and restores software breakpoints, especially
+2-byte breakpoints for compressed instructions. Hardware breakpoints continue
+to use the EH2 trigger units and do not modify ICCM contents.
 
 ### Connecting debugger to simulation
 
@@ -405,41 +418,37 @@ Open a third terminal and connect to the debug session through OpenOCD with `tel
 
 ### Connecting debugger to Nexys A7
 
-VeeRwolf can be debugged using the same USB cable that is used for programming the FPGA, communicating over UART and powering the board. There is however one restriction. If the Vivado programmer has been used, it will have exclusive access to the JTAG channel. For that reason it is recommended to avoid using the Vivado programming tool and instead use OpenOCD for programming the FPGA as well. Unplugging and plugging the USB cable back will make Vivado lose the grip on the JTAG port.
+The on-board USB JTAG interface remains available for programming the FPGA. CPU
+debug uses a separate FT232H MPSSE cable connected to Pmod JC for every CPU
+selection on this modified Nexys target:
 
-Programming the board with OpenOCD can be performed by running (from $WORKSPACE)
+| FT232H | JTAG | Pmod JC |
+| ------ | ---- | ------- |
+| ADBUS0 | TCK  | JC1 |
+| ADBUS1 | TDI  | JC2 |
+| ADBUS2 | TDO  | JC3 |
+| ADBUS3 | TMS  | JC4 |
+| GND    | GND  | JC5 or JC11 |
+
+Leave the FT232H VCC lead disconnected while the Nexys board is powered
+normally. The detailed wiring diagram is available in
+`docs/c232hm-nexys4-jtag-wiring.svg`.
+
+Programming the FPGA through its on-board interface is unchanged:
 
     openocd -f $VEERWOLF_ROOT/data/veerwolf_nexys_program.cfg
 
-To change the default FPGA image to load, add `-c "set BITFILE /path/to/bitfile"` as the first argument to openocd.
+EH2 uses the direct external debug configuration:
 
-If everything goes as expected, this should output
+    openocd -f $VEERWOLF_ROOT/data/veerwolf_nexys_eh2_debug.cfg
 
-    Info : ftdi: if you experience problems at higher adapter clocks, try the command "ftdi_tdo_sample_edge falling"
-    Info : clock speed 10000 kHz
-    Info : JTAG tap: xc7.tap tap/device found: 0x13631093 (mfg: 0x049 (Xilinx), part: 0x3631, ver: 0x1)
-    Warn : gdb services need one or more targets defined
-    loaded file build/veerwolf_0/nexys_a7-vivado/veerwolf_0.bit to pld device 0 in 3s 201521us
-    shutdown command invoked
-
-OpenOCD can now be connected to VeeRwolf by running
-
-    openocd -f $VEERWOLF_ROOT/data/veerwolf_nexys_debug.cfg
-
-This should output
-
-    Info : ftdi: if you experience problems at higher adapter clocks, try the command "ftdi_tdo_sample_edge falling"
-    Info : clock speed 10000 kHz
-    Info : JTAG tap: riscv.cpu tap/device found: 0x13631093 (mfg: 0x049 (Xilinx), part: 0x3631, ver: 0x1)
-    Info : datacount=2 progbufsize=0
-    Warn : We won't be able to execute fence instructions on this target. Memory may not always appear consistent. (progbufsize=0, impebreak=0)
-    Info : Examined RISC-V core; found 1 harts
-    Info :  hart 0: XLEN=32, misa=0x40001104
-    Info : Listening on port 3333 for gdb connections
-    Info : Listening on port 6666 for tcl connections
-    Info : Listening on port 4444 for telnet connections
-
-Open a third terminal and connect to the debug session through OpenOCD with `telnet localhost 4444`. From this terminal, it is now possible to view and control the state of of the CPU and memory. Try this by running `mwb 0x80001010 1`. This will write to the GPIO register. To verify that it worked, LED0 should light up. By writing 0 to the same register (`mwb 0x80001010 0`), the LED will be turned off.
+The official EH2 1.4 Debug Module has `progbufsize=0`; this is an architectural
+property, not a missing VeeRwolf RTL block. Use the
+[alphijiang OpenOCD fork](https://github.com/alphijiang/openocd), whose EH2
+abstract-memory implementation supports 8-, 16- and 32-bit ICCM reads and
+writes. This allows GDB/Eclipse memory operations and software-breakpoint
+insertion/restoration to work without adding an ICCM RTL width converter or a
+Debug Module program buffer.
 
 ### Loading programs with OpenOCD
 
@@ -449,14 +458,25 @@ After the program has been loaded, set the program counter to address zero with 
 
 ## Booting
 
-VeeRwolf is set up by default to read its initial instructions from address 0x80000000 which point to the on-chip boot ROM. A default bootloader is provided which has the capability to boot from SPI Flash, RAM or serial depending on the GPIO pins connected to bits 7:6 in register 0x80001013. The table below summarizes the boot modes
+VeeRwolf is set up by default to read its initial instructions from address
+`0x80000000`, which points to the on-chip Boot ROM. The common V21 bootloader
+can continue from SPI Flash, UART serial loading, external RAM/DDR, or ICCM,
+depending on GPIO bits 7:6 in register `0x80001013` (switches SW15:SW14).
 
 | bit7 | bit6 | Boot mode         |
 | ---- | ---- | ----------------- |
 |    0 |    0 | SPI uImage loader |
-|    0 |    1 | Jump to RAM       |
-|    1 |    0 | Serial boot       |
-|    1 |    1 | Undefined         |
+|    0 |    1 | Serial boot       |
+|    1 |    0 | Jump to RAM       |
+|    1 |    1 | Jump to ICCM      |
+
+### Jump to ICCM
+
+ICCM boot jumps to `0xEE000000` without copying or validating an image. Load a
+valid executable at that address before selecting this mode. EH1 and EH2 use
+this ICCM base in their current configurations. A target configured with ICCM
+disabled, including the current Nexys EL2 configuration, must not select this
+mode.
 
 ### Jump to RAM
 
@@ -503,4 +523,90 @@ In serial boot mode, the UART waits for a program in Intel Hex format to be sent
 
 ## CPU configuration
 
-VeeRwolf currently supports the VeeR EH1 and EL2 cores. For all targets VeeR EH1 is used by default unless there are hardware limitations (e.g. FPGA size) that only allows using VeeR EL2. All targets can optionally use VeeR EL2 by passing  `--flag=cpu_el2` as a run option to FuseSoC, e.g. `fusesoc run --target=sim --flag=cpu_el2 veerwolf` will run the default simulation example using VeeR EL2. Also note that the max frequency of the processors can differ. E.g. on the Nexys A7 board VeeR EH1 will run at 50MHz while VeeR EL2 runs at 25MHz. The `clk_freq_hz` register in the system controller will always show the correct value. The bootloader and Zephyr board support is also set up to automatically adapt timer and UART speeds to the runtime-detected clock speed.
+VeeRwolf keeps the upstream EH1 default and the existing `--flag=cpu_el2`
+selection. V21 adds EH2 only to the Nexys A7 target:
+
+    fusesoc run --target=nexys_a7 --flag=cpu_eh2 veerwolf
+
+The reset vector remains fixed at the upstream Boot ROM address `0x80000000`.
+V21 retains the removal of the experimental V18 hardware reset-vector
+selector; boot
+source selection belongs in the Boot ROM software rather than a synthesis
+parameter.
+
+Other official board targets retain their original EH1/EL2 selection and clock
+configuration. The common Nexys top exposes external JTAG for all three cores;
+all three official core packages provide the same `dmi_wrapper` interface.
+
+For the Nexys A7 target, EH1 runs at 50 MHz, EL2 at 25 MHz and EH2 at 40 MHz.
+The `clk_freq_hz` register in the system controller reports the selected
+hardware clock, so UART and timer firmware can adapt at runtime.
+
+### VeeR EH2 1.4 Nexys configuration
+
+V21 uses configuration files produced by the official EH2
+`configs/swerv.config` generator and pins the official EH2 1.4 RTL. The
+board-specific configuration is:
+
+| Resource | Address range | Size |
+| -------- | ------------- | ---- |
+| ICCM | `0xEE000000-0xEE00FFFF` | 64 KiB |
+| DCCM | `0xF0040000-0xF0047FFF` | 32 KiB |
+| Instruction cache | external executable regions | Disabled on Nexys A7 |
+| PIC | `0xF00C0000` window | 128 sources |
+
+The generated `cores/config/eh2_nexys_a7/link.ld` is kept in the official
+generator format and maps `.text` to ICCM and `.data`/`.bss` to DCCM. ICCM is
+the intended high-speed instruction memory on this resource-constrained
+target. External DDR2 instruction fetches remain uncached in V21.
+
+V19 experimentally enabled the official 8 KiB, four-way instruction cache.
+The cache was generated correctly, including eight RAMB36 data banks and LUTRAM
+tag arrays, but Vivado placement required 14,530 slices while only 14,351 were
+available for placement. The preceding no-cache build already consumed 98.19%
+of physical slices. V21 therefore disables the instruction cache through the
+official generator instead of attempting a placement directive or manually
+editing generated cache parameters. A larger FPGA target such as Genesys 2 is
+required before re-enabling and qualifying the cache.
+`LSU_STBUF_DEPTH` is four in both generated configuration headers; depth two
+is invalid for this dual-thread configuration and stalls stores.
+
+The official `default_mt` generator value `LOAD_TO_USE_PLUS1=0` is retained.
+RTL inspection confirms that this parameter selects the DCCM load latency:
+setting it to one inserts another register stage after the BRAM bank outputs
+and selects the matching hazard/bypass paths. It is a timing option, not a
+dual-hart correctness requirement. V14's failing timing paths were in the AXI
+CDC, not in the DCCM path, so V21 does not add this extra load cycle without
+post-route evidence that it is needed.
+
+Both EH2 harts are retained. Hart0 starts at reset; hart1 remains idle until
+hart0 or the debugger writes bit 1 of `MHARTSTART` (CSR `0x7FC`), after which
+hart1 starts from the same reset vector and distinguishes itself with
+`mhartid=1`. The single VeeRwolf machine-timer interrupt is connected to both
+EH2 timer inputs, as permitted by the EH2 PRM, and remains a shared platform
+resource. The EH2 multi-thread PIC remains shared and can delegate each
+external source to either hart.
+
+VeeRwolf does not currently implement the two memory-mapped MSI registers
+required to drive EH2 `soft_int[1:0]`; those inputs remain inactive. This does
+not prevent both harts from running or sharing DCCM/DDR, but firmware which
+requires standard inter-processor software interrupts must add an SoC-level
+MSI block instead of treating the syscon PIC test interrupts as MSIs.
+
+The generated `CLOCK_PERIOD=100` value is retained unchanged. It belongs to
+the EH2 testbench/configuration metadata and is not the Nexys hardware clock
+constraint. The actual 40 MHz clock is defined by `clk_gen_nexys.v`, the
+Vivado generated clocks and `clk_freq_hz=40000000`.
+
+The AXI connection to LiteDRAM uses the upstream PULP Gray-pointer CDC FIFO.
+V21 bounds both 40/100 MHz cross-domain datapaths to 10 ns and disables only
+their asynchronous hold checks; it does not hide setup paths with a broad
+clock-group waiver. LiteDRAM initialization status is synchronized through
+two core-clock flip-flops before syscon samples it.
+
+Detailed build, DRC and debug instructions are in
+[`EH2_NEXYS_A7_BUILD.md`](EH2_NEXYS_A7_BUILD.md).
+
+The RTL-derived system diagrams are available as editable SVG and rendered
+PNG files under `docs/`: `veerwolf-eh2-system-block-diagram` and
+`veerwolf-eh2-architecture-reference`.

@@ -12,6 +12,10 @@ filesets:
     files: [rtl/veer_el2_wrapper.sv : {file_type : systemVerilogSource}]
     depend: ["=chipsalliance.org:cores:VeeR_EL2:1.4"]
 
+  eh2:
+    files: [rtl/veer_eh2_wrapper.sv : {file_type : systemVerilogSource}]
+    depend: ["=chipsalliance.org:cores:VeeR_EH2:1.4"]
+
   core:
     files:
       - rtl/dpram64.v
@@ -25,7 +29,7 @@ filesets:
       - uart16550
       - ">=pulp-platform.org::axi:0.23.0-r1"
       - simple_spi
-      - wb_intercon
+      - ::wb_intercon:1.4.1
 
   bfm:
     files:
@@ -51,14 +55,32 @@ filesets:
       - sw/hello.ubvh : {file_type : user, copyto : hello.ubvh}
     file_type : verilogSource
 
+  agilex5_files:
+    files :
+      - data/agilex5.sdc : {file_type : SDC}
+      - data/agilex5.tcl : {file_type : tclSource}
+      - rtl/clk_gen_agilex.v : {file_type : verilogSource}
+      - rtl/veerwolf_agilex.v    : {file_type : systemVerilogSource}
+      - rtl/axi_ram.v : {file_type : verilogSource}
+
   nexys_a7_files:
     files :
-      - data/vivado_waiver.tcl : {file_type : tclSource}
       - data/veerwolf_nexys.xdc : {file_type : xdc}
       - rtl/clk_gen_nexys.v : {file_type : verilogSource}
-      - rtl/bscan_tap.sv    : {file_type : systemVerilogSource}
       - rtl/veerwolf_nexys.v    : {file_type : systemVerilogSource}
     depend : [":veerwolf:litedram"]
+
+  nexys_a7_upstream_waiver:
+    files: [data/vivado_waiver.tcl : {file_type : tclSource}]
+
+  nexys_video_files:
+    files :
+      - data/vivado_waiver.tcl : {file_type : tclSource}
+      - data/veerwolf_nexys_video.xdc : {file_type : xdc}
+      - rtl/axi_ram.v : {file_type : verilogSource}
+      - rtl/clk_gen_nexys.v : {file_type : verilogSource}
+      - rtl/bscan_tap.sv    : {file_type : systemVerilogSource}
+      - rtl/veerwolf_nexys_video.v    : {file_type : systemVerilogSource}
 
   arty_a7_files:
     files :
@@ -83,6 +105,23 @@ filesets:
       - sw/bootloader.vh : {file_type : user, copyto : bootloader.vh}
 
 targets:
+  agilex5:
+    default_tool : quartus
+    description : FPGA image with VeeR EH1 or EL2 for the Intel Agilex 5 FPGA E-Series DK A5E065BB32AES1 Premium devkit
+    filesets :
+      - "cpu_el2? (el2)"
+      - "!cpu_el2? (eh1)"
+      - bootrom
+      - core
+      - agilex5_files
+    generate : [intercon, "!cpu_el2? (veer_eh1_default_config)", "cpu_el2? (veer_el2_default_config)", version, wb_intercon]
+    parameters : [bootrom_file, "cpu_el2? (cpu_type=EL2)"]
+    tools:
+      quartus:
+        family : Agilex 5
+        device : A5ED065BB32AE6SR0
+    toplevel : veerwolf_agilex
+
   basys3:
     default_tool : vivado
     description : FPGA image with VeeR EL2 for the Digilent Basys 3 FPGA board
@@ -112,6 +151,22 @@ targets:
     tools:
       verilator:
         mode: lint-only
+    toplevel : veerwolf_core
+
+  lint_eh2:
+    default_tool : verilator
+    description : Run static code checks with the dual-hart VeeR EH2 1.4 core
+    filesets :
+      - eh2
+      - core
+      - bootrom
+      - "tool_verilator? (verilator_waiver)"
+    generate : [intercon_eh2, wb_intercon]
+    parameters : [rom_init_file]
+    tools:
+      verilator:
+        mode: lint-only
+        verilator_options : [-Wno-fatal]
     toplevel : veerwolf_core
 
   sim:
@@ -153,6 +208,24 @@ targets:
         xelab_options : [-d, XSIM]
     toplevel : veerwolf_core_tb
 
+  sim_eh2:
+    default_tool : verilator
+    description : Simulation target with the dual-hart VeeR EH2 1.4 core
+    filesets :
+      - eh2
+      - core
+      - "!tool_verilator? (bfm)"
+      - tb
+      - bootrom
+      - "tool_verilator? (verilator_tb)"
+      - "tool_verilator? (verilator_waiver)"
+    generate : [intercon_eh2, wb_intercon]
+    parameters : [SIMPRINT=true, jtag_vpi_enable, ram_init_file=hello.vh, rom_init_file, signature, timeout, vcd]
+    tools:
+      verilator:
+        verilator_options : [--trace, -Wno-fatal]
+    toplevel : veerwolf_core_tb
+
   spi_tb:
     default_tool : modelsim
     description : Simulation target with real SPI Flash model
@@ -183,18 +256,44 @@ targets:
 
   nexys_a7:
     default_tool : vivado
-    description : FPGA image with VeeR EH1 or EL2 for the Digilent Nexys A7 FPGA board
+    description : FPGA image with VeeR EH1, EL2 or EH2 for the Digilent Nexys A7 FPGA board
+    filesets :
+      - "cpu_eh2? (eh2)"
+      - "!cpu_eh2? (cpu_el2? (el2))"
+      - "!cpu_eh2? (!cpu_el2? (eh1))"
+      - bootrom
+      - core
+      - nexys_a7_files
+      - "!cpu_eh2? (nexys_a7_upstream_waiver)"
+    generate :
+      - "cpu_eh2? (intercon_eh2)"
+      - "!cpu_eh2? (intercon)"
+      - "!cpu_eh2? (!cpu_el2? (veer_eh1_default_config))"
+      - "!cpu_eh2? (cpu_el2? (veer_el2_nexys_a7_config))"
+      - "!cpu_eh2? (version)"
+      - wb_intercon
+    parameters :
+      - bootrom_file
+      - "!cpu_eh2? (cpu_el2? (cpu_type=EL2))"
+      - "cpu_eh2? (cpu_type=EH2)"
+    tools:
+      vivado: {part : xc7a100tcsg324-1}
+    toplevel : veerwolf_nexys_a7
+
+  nexys_video:
+    default_tool : vivado
+    description : FPGA image with VeeR EL2 for the Digilent Nexys Video A7 FPGA board
     filesets :
       - "cpu_el2? (el2)"
       - "!cpu_el2? (eh1)"
       - bootrom
       - core
-      - nexys_a7_files
+      - nexys_video_files
     generate : [intercon, "!cpu_el2? (veer_eh1_default_config)", "cpu_el2? (veer_el2_nexys_a7_config)", version, wb_intercon]
     parameters : [bootrom_file, "cpu_el2? (cpu_type=EL2)"]
     tools:
-      vivado: {part : xc7a100tcsg324-1}
-    toplevel : veerwolf_nexys_a7
+      vivado: {part : xc7a200tsbg484-1}
+    toplevel : veerwolf_nexys_video
 
   arty_a7:
     default_tool : vivado
@@ -243,6 +342,26 @@ generate:
            # have access to that value here, we hardcode it to the worst-case
            # value of four and hope that the synthesis tools will optimize
            # away the unused bits.
+          id_width : 4
+        sb:
+          id_width : 1
+      slaves:
+        io:
+          offset : 0x80000000
+          size   : 0x00004000
+        ram:
+          offset : 0x00000000
+          size   : 0x08000000 #128MiB
+
+  intercon_eh2:
+    generator: axi_intercon_gen
+    parameters:
+      masters:
+        ifu:
+          # EH2 1.4 is generated with a four-bit IFU transaction tag.
+          id_width : 4
+          read_only : true
+        lsu:
           id_width : 4
         sb:
           id_width : 1
@@ -316,7 +435,7 @@ parameters:
 
   cpu_type:
     datatype    : str
-    description : Controls whether to use VeeR EH1 or VeeR EL2. Implicitly set by the target
+    description : Controls whether to use VeeR EH1, VeeR EH2 or VeeR EL2. Implicitly set by the target
     paramtype   : vlogparam
 
   mem_clear:

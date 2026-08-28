@@ -83,8 +83,11 @@ module veerwolf_syscon
 `ifndef VERSION_MINOR
  `define VERSION_MINOR 255
 `endif
+`ifndef VERSION_PATCH
+ `define VERSION_PATCH 255
+`endif
 `ifndef VERSION_REV
- `define VERSION_REV 255
+ `define VERSION_REV 127
 `endif
 `ifndef VERSION_SHA
  `define VERSION_SHA deadbeef
@@ -192,7 +195,7 @@ module veerwolf_syscon
 	     if (i_wb_sel[2]) mtimecmp[55:48] <= i_wb_dat[23:16];
 	     if (i_wb_sel[3]) mtimecmp[63:56] <= i_wb_dat[31:24];
 	  end
-	  12 : begin //0x30-3f
+	  12 : begin //0x30-33
 	     if (i_wb_sel[0]) irq_timer_cnt[7:0]   <= i_wb_dat[7:0]  ;
 	     if (i_wb_sel[1]) irq_timer_cnt[15:8]  <= i_wb_dat[15:8] ;
 	     if (i_wb_sel[2]) irq_timer_cnt[23:16] <= i_wb_dat[23:16];

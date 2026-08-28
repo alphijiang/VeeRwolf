@@ -27,6 +27,10 @@ module veerwolf_nexys_a7
     parameter cpu_type = "EH1")
    (input wire 	       clk,
     input wire 	       rstn,
+    input wire         JTAG_TCK,
+    input wire         JTAG_TMS,
+    input wire         JTAG_TDI,
+    output wire        JTAG_TDO,
     output wire [12:0] ddram_a,
     output wire [2:0]  ddram_ba,
     output wire        ddram_ras_n,
@@ -59,6 +63,8 @@ module veerwolf_nexys_a7
 
    wire 	       litedram_init_done;
    wire 	       litedram_init_error;
+   (* ASYNC_REG = "TRUE" *) reg [1:0] litedram_init_done_sync;
+   (* ASYNC_REG = "TRUE" *) reg [1:0] litedram_init_error_sync;
 
    localparam RAM_SIZE     = 32'h10000;
 
@@ -157,6 +163,21 @@ module veerwolf_nexys_a7
       .o_rvalid  (mem.r_valid ),
       .i_rready  (mem.r_ready ));
 
+   // LiteDRAM generates these sticky status bits in user_clk. Synchronize
+   // them before they are sampled by the core-clocked syscon registers. The
+   // AXI payload itself crosses through the dedicated Gray-pointer CDC FIFO.
+   always @(posedge clk_core or posedge rst_core) begin
+      if (rst_core) begin
+         litedram_init_done_sync  <= 2'b00;
+         litedram_init_error_sync <= 2'b00;
+      end else begin
+         litedram_init_done_sync  <= {litedram_init_done_sync[0],
+                                      litedram_init_done};
+         litedram_init_error_sync <= {litedram_init_error_sync[0],
+                                      litedram_init_error};
+      end
+   end
+
    wire        dmi_reg_en;
    wire [6:0]  dmi_reg_addr;
    wire        dmi_reg_wr_en;
@@ -182,24 +203,29 @@ module veerwolf_nexys_a7
       .USRDONEO  (1'b1),
       .USRDONETS (1'b0));
 
-   bscan_tap tap
-     (.clk            (clk_core),
-      .rst            (rst_core),
-      .jtag_id        (31'd0),
-      .dmi_reg_wdata  (dmi_reg_wdata),
-      .dmi_reg_addr   (dmi_reg_addr),
-      .dmi_reg_wr_en  (dmi_reg_wr_en),
-      .dmi_reg_en     (dmi_reg_en),
-      .dmi_reg_rdata  (dmi_reg_rdata),
-      .dmi_hard_reset (dmi_hard_reset),
-      .rd_status      (2'd0),
-      .idle           (3'd0),
-      .dmi_stat       (2'd0),
-      .version        (4'd1));
+   // Use the DMI transport supplied by the selected official VeeR core.
+   // The EH1, EH2 and EL2 packages synchronize DMI request strobes internally.
+   dmi_wrapper tap
+     (.trst_n        (~rst_core),
+      .tck           (JTAG_TCK),
+      .tms           (JTAG_TMS),
+      .tdi           (JTAG_TDI),
+      .tdo           (JTAG_TDO),
+      .tdoEnable     (),
+      .core_rst_n    (~rst_core),
+      .core_clk      (clk_core),
+      .jtag_id       (31'd0),
+      .rd_data       (dmi_reg_rdata),
+      .reg_wr_data   (dmi_reg_wdata),
+      .reg_wr_addr   (dmi_reg_addr),
+      .reg_en        (dmi_reg_en),
+      .reg_wr_en     (dmi_reg_wr_en),
+      .dmi_hard_reset(dmi_hard_reset));
 
    veerwolf_core
      #(.bootrom_file (bootrom_file),
-       .clk_freq_hz  ((cpu_type == "EL2") ? 32'd25_000_000 : 32'd50_000_000))
+       .clk_freq_hz  ((cpu_type == "EL2") ? 32'd25_000_000 :
+                      (cpu_type == "EH2") ? 32'd40_000_000 : 32'd50_000_000))
    veerwolf
      (.clk  (clk_core),
       .rstn (~rst_core),
@@ -254,8 +280,8 @@ module veerwolf_nexys_a7
       .i_ram_rlast    (cpu.r_last),
       .i_ram_rvalid   (cpu.r_valid),
       .o_ram_rready   (cpu.r_ready),
-      .i_ram_init_done  (litedram_init_done),
-      .i_ram_init_error (litedram_init_error),
+      .i_ram_init_done  (litedram_init_done_sync[1]),
+      .i_ram_init_error (litedram_init_error_sync[1]),
       .i_gpio           ({32'd0,sw_2r,16'd0}),
       .o_gpio           (gpio_out));
 
