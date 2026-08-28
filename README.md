@@ -604,9 +604,4 @@ their asynchronous hold checks; it does not hide setup paths with a broad
 clock-group waiver. LiteDRAM initialization status is synchronized through
 two core-clock flip-flops before syscon samples it.
 
-Detailed build, DRC and debug instructions are in
-[`EH2_NEXYS_A7_BUILD.md`](EH2_NEXYS_A7_BUILD.md).
 
-The RTL-derived system diagrams are available as editable SVG and rendered
-PNG files under `docs/`: `veerwolf-eh2-system-block-diagram` and
-`veerwolf-eh2-architecture-reference`.
