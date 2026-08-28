@@ -459,7 +459,7 @@ After the program has been loaded, set the program counter to address zero with 
 ## Booting
 
 VeeRwolf is set up by default to read its initial instructions from address
-`0x80000000`, which points to the on-chip Boot ROM. The common V21 bootloader
+`0x80000000`, which points to the on-chip Boot ROM. The  bootloader
 can continue from SPI Flash, UART serial loading, external RAM/DDR, or ICCM,
 depending on GPIO bits 7:6 in register `0x80001013` (switches SW15:SW14).
 
@@ -524,12 +524,12 @@ In serial boot mode, the UART waits for a program in Intel Hex format to be sent
 ## CPU configuration
 
 VeeRwolf keeps the upstream EH1 default and the existing `--flag=cpu_el2`
-selection. V21 adds EH2 only to the Nexys A7 target:
+selection. now adds EH2 only to the Nexys A7 target:
 
     fusesoc run --target=nexys_a7 --flag=cpu_eh2 veerwolf
 
 The reset vector remains fixed at the upstream Boot ROM address `0x80000000`.
-V21 retains the removal of the experimental V18 hardware reset-vector
+this retains the removal of the experimental V18 hardware reset-vector
 selector; boot
 source selection belongs in the Boot ROM software rather than a synthesis
 parameter.
@@ -542,9 +542,9 @@ For the Nexys A7 target, EH1 runs at 50 MHz, EL2 at 25 MHz and EH2 at 40 MHz.
 The `clk_freq_hz` register in the system controller reports the selected
 hardware clock, so UART and timer firmware can adapt at runtime.
 
-### VeeR EH2 1.4 Nexys configuration
+### VeeR EH2  Nexys configuration
 
-V21 uses configuration files produced by the official EH2
+The uses configuration files produced by the official EH2
 `configs/swerv.config` generator and pins the official EH2 1.4 RTL. The
 board-specific configuration is:
 
@@ -558,13 +558,13 @@ board-specific configuration is:
 The generated `cores/config/eh2_nexys_a7/link.ld` is kept in the official
 generator format and maps `.text` to ICCM and `.data`/`.bss` to DCCM. ICCM is
 the intended high-speed instruction memory on this resource-constrained
-target. External DDR2 instruction fetches remain uncached in V21.
+target. External DDR2 instruction fetches remain uncached in this Version.
 
 V19 experimentally enabled the official 8 KiB, four-way instruction cache.
 The cache was generated correctly, including eight RAMB36 data banks and LUTRAM
 tag arrays, but Vivado placement required 14,530 slices while only 14,351 were
 available for placement. The preceding no-cache build already consumed 98.19%
-of physical slices. V21 therefore disables the instruction cache through the
+of physical slices. The therefore disables the instruction cache through the
 official generator instead of attempting a placement directive or manually
 editing generated cache parameters. A larger FPGA target such as Genesys 2 is
 required before re-enabling and qualifying the cache.
@@ -576,7 +576,7 @@ RTL inspection confirms that this parameter selects the DCCM load latency:
 setting it to one inserts another register stage after the BRAM bank outputs
 and selects the matching hazard/bypass paths. It is a timing option, not a
 dual-hart correctness requirement. V14's failing timing paths were in the AXI
-CDC, not in the DCCM path, so V21 does not add this extra load cycle without
+CDC, not in the DCCM path, so This version does not add this extra load cycle without
 post-route evidence that it is needed.
 
 Both EH2 harts are retained. Hart0 starts at reset; hart1 remains idle until
@@ -599,7 +599,7 @@ constraint. The actual 40 MHz clock is defined by `clk_gen_nexys.v`, the
 Vivado generated clocks and `clk_freq_hz=40000000`.
 
 The AXI connection to LiteDRAM uses the upstream PULP Gray-pointer CDC FIFO.
-V21 bounds both 40/100 MHz cross-domain datapaths to 10 ns and disables only
+This bounds both 40/100 MHz cross-domain datapaths to 10 ns and disables only
 their asynchronous hold checks; it does not hide setup paths with a broad
 clock-group waiver. LiteDRAM initialization status is synchronized through
 two core-clock flip-flops before syscon samples it.
