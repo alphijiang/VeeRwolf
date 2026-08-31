@@ -528,11 +528,7 @@ selection. now adds EH2 only to the Nexys A7 target:
 
     fusesoc run --target=nexys_a7 --flag=cpu_eh2 veerwolf
 
-The reset vector remains fixed at the upstream Boot ROM address `0x80000000`.
-this retains the removal of the experimental V18 hardware reset-vector
-selector; boot
-source selection belongs in the Boot ROM software rather than a synthesis
-parameter.
+
 
 Other official board targets retain their original EH1/EL2 selection and clock
 configuration. The common Nexys top exposes external JTAG for all three cores;
@@ -566,9 +562,7 @@ The official `default_mt` generator value `LOAD_TO_USE_PLUS1=0` is retained.
 RTL inspection confirms that this parameter selects the DCCM load latency:
 setting it to one inserts another register stage after the BRAM bank outputs
 and selects the matching hazard/bypass paths. It is a timing option, not a
-dual-hart correctness requirement. V14's failing timing paths were in the AXI
-CDC, not in the DCCM path, so This version does not add this extra load cycle without
-post-route evidence that it is needed.
+dual-hart correctness requirement.
 
 Both EH2 harts are retained. Hart0 starts at reset; hart1 remains idle until
 hart0 or the debugger writes bit 1 of `MHARTSTART` (CSR `0x7FC`), after which
