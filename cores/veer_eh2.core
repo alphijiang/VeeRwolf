@@ -6,14 +6,11 @@ description : VeeR EH2 1.4 RISC-V Core with the VeeRwolf Nexys A7 configuration
 filesets:
   rtl:
     files:
-      - config/eh2_nexys_a7/common_defines.vh : {file_type : systemVerilogSource, copyto : config/common_defines.vh}
-      - config/eh2_nexys_a7/eh2_pdef.vh : {file_type : systemVerilogSource, copyto : config/eh2_pdef.vh}
-      - config/eh2_nexys_a7/eh2_param.vh : {is_include_file : true}
-      - config/eh2_nexys_a7/pic_map_auto.h : {is_include_file : true}
       - design/include/eh2_def.sv
       - design/eh2_mem.sv
       - design/eh2_pic_ctrl.sv
-      - design/eh2_swerv.sv
+      - design/eh2_veer_wrapper.sv
+      - design/eh2_veer.sv
       - design/eh2_dma_ctrl.sv
       - design/ifu/eh2_ifu_aln_ctl.sv
       - design/ifu/eh2_ifu_compress_ctl.sv
@@ -74,10 +71,16 @@ targets:
       verilator:
         mode : lint-only
         verilator_options : [-Wno-fatal]
-    toplevel : eh2_swerv
+    toplevel : eh2_veer
+
+generators:
+  veer_eh2_config:
+    interpreter: python3
+    command: configs/veer_config_gen.py
+    description : Create a VeeR EH2 configuration
 
 provider:
   name    : github
-  user    : chipsalliance
+  user    : alphijiang
   repo    : Cores-VeeR-EH2
-  version : fd2bc651393e47b3170ac6f7142725dbef20e99a
+  version : ccf787a83e7e28267b172b50ef2de266c7d6ccac

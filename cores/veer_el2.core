@@ -99,6 +99,6 @@ parameters:
 
 provider:
   name    : github
-  user    : chipsalliance
+  user    : alphijiang
   repo    : Cores-VeeR-EL2
-  version : 882027cc538bf7ef11c763d499877efdb5c827d8
+  version : aefefae20b77fa61ba306bff36a72f42ae4cc028

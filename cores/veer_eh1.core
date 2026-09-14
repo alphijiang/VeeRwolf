@@ -149,6 +149,6 @@ generators:
 
 provider:
   name    : github
-  user    : chipsalliance
+  user    : alphijiang
   repo    : Cores-VeeR-EH1
-  version : 915fb34a5b38ef14c5d5c05431765ad8b912bc3
+  version : d04b1c7ae675a63dc4307cacfd10547ec937b928

@@ -140,17 +140,27 @@ targets:
     default_tool : verilator
     description : Run static code checks (linting)
     filesets :
-      - "cpu_el2? (el2)"
-      - "!cpu_el2? (eh1)"
+      - "cpu_eh2? (eh2)"
+      - "!cpu_eh2? (cpu_el2? (el2))"
+      - "!cpu_eh2? (!cpu_el2? (eh1))"
       - core
       - bootrom
       - "tool_verilator? (verilator_waiver)"
 
-    generate : [intercon, "cpu_el2? (veer_el2_default_config)", "!cpu_el2? (veer_eh1_default_config)", version, wb_intercon]
+    generate:
+      - "cpu_eh2? (veer_eh2_nexys4_config)"
+      - "cpu_eh2? (intercon_eh2)"
+      - "!cpu_eh2? (intercon)"
+      - "!cpu_eh2? (cpu_el2? (veer_el2_default_config))"
+      - "!cpu_eh2? (!cpu_el2? (veer_eh1_default_config))"
+      - "!cpu_eh2? (version)"
+      - wb_intercon
     parameters : [rom_init_file]
     tools:
       verilator:
         mode: lint-only
+        # Match lint_eh2: report upstream warnings, but fail on actual errors.
+        verilator_options : [-Wno-fatal]
     toplevel : veerwolf_core
 
   lint_eh2:
@@ -161,7 +171,7 @@ targets:
       - core
       - bootrom
       - "tool_verilator? (verilator_waiver)"
-    generate : [intercon_eh2, wb_intercon]
+    generate : [veer_eh2_nexys4_config, intercon_eh2, wb_intercon]
     parameters : [rom_init_file]
     tools:
       verilator:
@@ -173,8 +183,9 @@ targets:
     default_tool : verilator
     description : Default simulation target
     filesets :
-      - "cpu_el2? (el2)"
-      - "!cpu_el2? (eh1)"
+      - "cpu_eh2? (eh2)"
+      - "!cpu_eh2? (cpu_el2? (el2))"
+      - "!cpu_eh2? (!cpu_el2? (eh1))"
       - core
       - "!tool_verilator? (bfm)"
       - tb
@@ -182,7 +193,14 @@ targets:
       - "tool_verilator? (verilator_tb)"
       - "tool_verilator? (verilator_waiver)"
 
-    generate : [intercon, "cpu_el2? (veer_el2_default_config)", "!cpu_el2? (veer_eh1_default_config)", version, wb_intercon]
+    generate:
+      - "cpu_eh2? (veer_eh2_nexys4_config)"
+      - "cpu_eh2? (intercon_eh2)"
+      - "!cpu_eh2? (intercon)"
+      - "!cpu_eh2? (cpu_el2? (veer_el2_default_config))"
+      - "!cpu_eh2? (!cpu_el2? (veer_eh1_default_config))"
+      - "!cpu_eh2? (version)"
+      - wb_intercon
     parameters : [SIMPRINT=true, jtag_vpi_enable, ram_init_file=hello.vh, rom_init_file, signature, timeout, vcd]
     tools:
       rivierapro:
@@ -219,7 +237,7 @@ targets:
       - bootrom
       - "tool_verilator? (verilator_tb)"
       - "tool_verilator? (verilator_waiver)"
-    generate : [intercon_eh2, wb_intercon]
+    generate : [veer_eh2_nexys4_config, intercon_eh2, wb_intercon]
     parameters : [SIMPRINT=true, jtag_vpi_enable, ram_init_file=hello.vh, rom_init_file, signature, timeout, vcd]
     tools:
       verilator:
@@ -266,6 +284,7 @@ targets:
       - nexys_a7_files
       - "!cpu_eh2? (nexys_a7_upstream_waiver)"
     generate :
+      - "cpu_eh2? (veer_eh2_nexys4_config)"
       - "cpu_eh2? (intercon_eh2)"
       - "!cpu_eh2? (intercon)"
       - "!cpu_eh2? (!cpu_el2? (veer_eh1_default_config))"
@@ -310,6 +329,37 @@ targets:
     toplevel : veerwolf_arty_a7
 
 generate:
+  # Board-specific EH2 profile for Nexys4 FPGA, sim and lint. Edit args here
+  # and rerun setup.
+  #
+  # Inherited from alphijiang/Cores-VeeR-EH2 ccf787a8 + default_mt (documented here, deliberately
+  # not duplicated in args):
+  #   reset_vec=0x80000000, fpga_optimize=1, fast_interrupt_redirect=1
+  #   dccm_enable=1, dccm_offset=0x40000
+  #   iccm_enable=1, iccm_size=64, iccm_num_banks=4,
+  #   iccm_offset=0xe000000
+  #   pic_offset=0xc0000
+  #
+  # args below are the VeeRwolf FPGA values that differ from default_mt.
+  veer_eh2_nexys4_config:
+    generator: veer_eh2_config
+    position: first
+    parameters:
+      args:
+        - -target=default_mt
+        - -unset=assert_on
+        - -set=dccm_size=32
+        - -set=dccm_num_banks=4
+        - -set=icache_enable=0
+        - -set=pic_total_int=128
+        - -set=ret_stack_size=2
+        - -set=btb_size=16
+        - -set=bht_size=64
+        - -set=lsu_stbuf_depth=4
+        - -set=lsu_num_nbload=2
+        - -set=dma_buf_depth=2
+        - -set=div_bit=1
+
   wb_intercon:
     generator: wb_intercon_gen
     parameters:

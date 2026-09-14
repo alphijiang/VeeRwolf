@@ -16,7 +16,7 @@
 //********************************************************************************
 // $Id$
 //
-// Function: Top wrapper file with eh2_swerv/mem instantiated inside
+// Function: Top wrapper file with eh2_veer/mem instantiated inside
 // Comments:
 //
 //********************************************************************************
@@ -838,8 +838,8 @@ import eh2_pkg::*;
 
 `endif //  `ifdef RV_BUILD_AHB_LITE
 
-   // Instantiate the eh2_swerv core
-   eh2_swerv #(.pt(pt)) swerv (
+   // Instantiate the eh2_veer core
+   eh2_veer #(.pt(pt)) veer (
                                 .timer_int               (timer_int_core),
                                 .soft_int                (soft_int),
                                 .extintsrc_req           (extintsrc_req_core),
