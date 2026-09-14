@@ -58,7 +58,7 @@ filesets:
 
   vivado_tcl:
     files:
-      - config/eh2_nexys_a7/vivado.tcl : {file_type : tclSource}
+      - tools/vivado.tcl : {file_type : tclSource}
 
 targets:
   default:
@@ -83,4 +83,4 @@ provider:
   name    : github
   user    : alphijiang
   repo    : Cores-VeeR-EH2
-  version : ccf787a83e7e28267b172b50ef2de266c7d6ccac
+  version : 420d364568a4c472ea6b495bd5a331079500d11c

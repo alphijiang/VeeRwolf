@@ -101,4 +101,4 @@ provider:
   name    : github
   user    : alphijiang
   repo    : Cores-VeeR-EL2
-  version : 420d364568a4c472ea6b495bd5a331079500d11c
+  version : aefefae20b77fa61ba306bff36a72f42ae4cc028
