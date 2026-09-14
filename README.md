@@ -1,7 +1,13 @@
 VeeRwolf
 ========
 
-VeeRwolf is a [FuseSoC](https://github.com/olofk/fusesoc)-based reference platform for the VeeR family of RISC-V cores. [VeeR EH1](https://github.com/chipsalliance/Cores-VeeR-EH1) and [VeeR EL2](https://github.com/chipsalliance/Cores-VeeR-EL2) remain supported as upstream. This fork integration also adds [VeeR EH2](https://github.com/chipsalliance/Cores-VeeR-EH2) to the Nexys A7 target. See [CPU configuration](#cpu-configuration) to learn how to switch between them.
+# Current revision: V36
+
+This revision uses the `alphijiang` EH1/EL2/EH2 core forks. EH2 hardware
+configuration is generated from `configs/veer.config` through the
+`veerwolf.core` board profile; the official EH2 VLNV is `VeeR_EH2:1.4`.
+
+VeeRwolf is a [FuseSoC](https://github.com/olofk/fusesoc)-based reference platform for the VeeR family of RISC-V cores. The EH1, EL2 and EH2 providers use the maintained forks [Cores-VeeR-EH1](https://github.com/alphijiang/Cores-VeeR-EH1), [Cores-VeeR-EL2](https://github.com/alphijiang/Cores-VeeR-EL2) and [Cores-VeeR-EH2](https://github.com/alphijiang/Cores-VeeR-EH2). This integration adds board-specific EH2 profiles while preserving the upstream VeeRwolf target and flag workflow. See [CPU configuration](#cpu-configuration) to learn how to switch between them.
 
 This can be used to run the [RISC-V compliance tests](https://github.com/riscv/riscv-compliance), [Zephyr OS](https://www.zephyrproject.org), [TockOS](https://github.com/tock/tock/tree/master/boards/swervolf) or other software in simulators or on FPGA boards. Focus is on portability, extendability and ease of use; to allow VeeR users to quickly get software running, modify the SoC to their needs or port it to new target devices.
 
@@ -540,9 +546,11 @@ hardware clock, so UART and timer firmware can adapt at runtime.
 
 ### VeeR EH2  Nexys configuration
 
-The uses configuration files produced by the official EH2
-`configs/swerv.config` generator and pins the official EH2 1.4 RTL. The
-board-specific configuration is:
+The EH2 configuration files are produced by the maintained
+`alphijiang/Cores-VeeR-EH2` fork using its `configs/veer.config` script
+(based on commit `ccf787a83e7e28267b172b50ef2de266c7d6ccac`). Its arguments are owned by
+`veer_eh2_nexys4_config` in `veerwolf.core`. The initial board configuration
+is:
 
 | Resource | Address range | Size |
 | -------- | ------------- | ---- |
@@ -588,5 +596,3 @@ This bounds both 40/100 MHz cross-domain datapaths to 10 ns and disables only
 their asynchronous hold checks; it does not hide setup paths with a broad
 clock-group waiver. LiteDRAM initialization status is synchronized through
 two core-clock flip-flops before syscon samples it.
-
-
