@@ -1,7 +1,6 @@
 VeeRwolf
 ========
 
-# Current revision: V36
 
 This revision uses the `alphijiang` EH1/EL2/EH2 core forks. EH2 hardware
 configuration is generated from `configs/veer.config` through the
