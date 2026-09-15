@@ -225,7 +225,7 @@ module veerwolf_nexys_a7
    veerwolf_core
      #(.bootrom_file (bootrom_file),
        .clk_freq_hz  ((cpu_type == "EL2") ? 32'd25_000_000 :
-                      (cpu_type == "EH2") ? 32'd40_000_000 : 32'd50_000_000))
+                      (cpu_type == "EH2") ? 32'd25_000_000 : 32'd50_000_000))
    veerwolf
      (.clk  (clk_core),
       .rstn (~rst_core),
