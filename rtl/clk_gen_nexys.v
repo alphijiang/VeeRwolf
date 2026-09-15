@@ -38,7 +38,7 @@ module clk_gen_nexys
        .CLKFBOUT_MULT(16),
        .CLKIN1_PERIOD(10.0), //100MHz
        .CLKOUT0_DIVIDE((CPU_TYPE == "EL2") ? 64 :
-                       (CPU_TYPE == "EH2") ? 40 : 32),
+                       (CPU_TYPE == "EH2") ? 64 : 32),
        .DIVCLK_DIVIDE(1),
        .STARTUP_WAIT("FALSE"))
    PLLE2_BASE_inst
