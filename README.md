@@ -539,7 +539,7 @@ Other official board targets retain their original EH1/EL2 selection and clock
 configuration. The common Nexys top exposes external JTAG for all three cores;
 all three official core packages provide the same `dmi_wrapper` interface.
 
-For the Nexys A7 target, EH1 runs at 50 MHz, EL2 at 25 MHz and EH2 at 40 MHz.
+For the Nexys A7 target, EH1 runs at 50 MHz, EL2 at 25 MHz and EH2 at 25 MHz.
 The `clk_freq_hz` register in the system controller reports the selected
 hardware clock, so UART and timer firmware can adapt at runtime.
 
@@ -587,7 +587,7 @@ MSI block instead of treating the syscon PIC test interrupts as MSIs.
 
 The generated `CLOCK_PERIOD=100` value is retained unchanged. It belongs to
 the EH2 testbench/configuration metadata and is not the Nexys hardware clock
-constraint. The actual 40 MHz clock is defined by `clk_gen_nexys.v`, the
+constraint. The actual 25 MHz clock is defined by `clk_gen_nexys.v`, the
 Vivado generated clocks and `clk_freq_hz=40000000`.
 
 The AXI connection to LiteDRAM uses the upstream PULP Gray-pointer CDC FIFO.
