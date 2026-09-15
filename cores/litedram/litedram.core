@@ -19,7 +19,6 @@ filesets:
   xdc: {files : [litedram.xdc : {file_type : xdc}]}
   tb:
     files:
-      - $(XILINX_VIVADO)/data/verilog/src/glbl.v
       - sim/ddr2_model_parameters.vh : {is_include_file : true}
       - sim/ddr2_model.v
       - litedram_tb.v
