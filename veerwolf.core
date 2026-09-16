@@ -27,7 +27,8 @@ filesets:
     depend :
       - fusesoc:utils:generators
       - uart16550
-      - ">=pulp-platform.org::axi:0.23.0-r1"
+      - "=pulp-platform.org::axi:0.25.0"
+      - "=pulp-platform.org::common_cells:1.20.0"
       - simple_spi
       - ::wb_intercon:1.4.1
 
@@ -72,6 +73,13 @@ filesets:
 
   nexys_a7_upstream_waiver:
     files: [data/vivado_waiver.tcl : {file_type : tclSource}]
+
+  genesys2_files:
+    files:
+      - data/veerwolf_genesys2.xdc : {file_type : xdc}
+      - rtl/clk_gen_genesys2.v : {file_type : verilogSource}
+      - rtl/veerwolf_genesys2.v : {file_type : systemVerilogSource}
+    depend: [":veerwolf:litedram_genesys2:0"]
 
   nexys_video_files:
     files :
@@ -148,7 +156,7 @@ targets:
       - "tool_verilator? (verilator_waiver)"
 
     generate:
-      - "cpu_eh2? (veer_eh2_nexys4_config)"
+      - "cpu_eh2? (veer_eh2_default_config)"
       - "cpu_eh2? (intercon_eh2)"
       - "!cpu_eh2? (intercon)"
       - "!cpu_eh2? (cpu_el2? (veer_el2_default_config))"
@@ -171,7 +179,7 @@ targets:
       - core
       - bootrom
       - "tool_verilator? (verilator_waiver)"
-    generate : [veer_eh2_nexys4_config, intercon_eh2, wb_intercon]
+    generate : [veer_eh2_default_config, intercon_eh2, wb_intercon]
     parameters : [rom_init_file]
     tools:
       verilator:
@@ -194,7 +202,7 @@ targets:
       - "tool_verilator? (verilator_waiver)"
 
     generate:
-      - "cpu_eh2? (veer_eh2_nexys4_config)"
+      - "cpu_eh2? (veer_eh2_default_config)"
       - "cpu_eh2? (intercon_eh2)"
       - "!cpu_eh2? (intercon)"
       - "!cpu_eh2? (cpu_el2? (veer_el2_default_config))"
@@ -237,7 +245,7 @@ targets:
       - bootrom
       - "tool_verilator? (verilator_tb)"
       - "tool_verilator? (verilator_waiver)"
-    generate : [veer_eh2_nexys4_config, intercon_eh2, wb_intercon]
+    generate : [veer_eh2_default_config, intercon_eh2, wb_intercon]
     parameters : [SIMPRINT=true, jtag_vpi_enable, ram_init_file=hello.vh, rom_init_file, signature, timeout, vcd]
     tools:
       verilator:
@@ -299,6 +307,51 @@ targets:
       vivado: {part : xc7a100tcsg324-1}
     toplevel : veerwolf_nexys_a7
 
+
+  default:
+    default_tool : vivado
+    description : Default FPGA image with VeeR EH1 for the Digilent Nexys A7 FPGA board
+    filesets:
+      - eh1
+      - bootrom
+      - core
+      - nexys_a7_files
+      - nexys_a7_upstream_waiver
+    generate:
+      - intercon
+      - veer_eh1_default_config
+      - wb_intercon
+    parameters: [bootrom_file]
+    tools:
+      vivado: {part : xc7a100tcsg324-1}
+    toplevel : veerwolf_nexys_a7
+
+  genesys2:
+    default_tool : vivado
+    description : FPGA image with VeeR EH1, EL2 or EH2 for the Digilent Genesys 2 FPGA board
+    filesets:
+      - "cpu_eh2? (eh2)"
+      - "!cpu_eh2? (cpu_el2? (el2))"
+      - "!cpu_eh2? (!cpu_el2? (eh1))"
+      - bootrom
+      - core
+      - genesys2_files
+    generate:
+      - "cpu_eh2? (veer_eh2_nexys4_config)"
+      - "cpu_eh2? (intercon_genesys2_eh2)"
+      - "!cpu_eh2? (intercon_genesys2)"
+      - "!cpu_eh2? (!cpu_el2? (veer_eh1_default_config))"
+      - "!cpu_eh2? (cpu_el2? (veer_el2_nexys_a7_config))"
+      - "!cpu_eh2? (version)"
+      - wb_intercon
+    parameters:
+      - bootrom_file
+      - "!cpu_eh2? (cpu_el2? (cpu_type=EL2))"
+      - "cpu_eh2? (cpu_type=EH2)"
+    tools:
+      vivado: {part : xc7k325tffg900-2}
+    toplevel : veerwolf_genesys2
+
   nexys_video:
     default_tool : vivado
     description : FPGA image with VeeR EL2 for the Digilent Nexys Video A7 FPGA board
@@ -329,18 +382,16 @@ targets:
     toplevel : veerwolf_arty_a7
 
 generate:
-  # Board-specific EH2 profile for Nexys4 FPGA, sim and lint. Edit args here
-  # and rerun setup.
-  #
-  # Inherited from alphijiang/Cores-VeeR-EH2 ccf787a8 + default_mt (documented here, deliberately
-  # not duplicated in args):
-  #   reset_vec=0x80000000, fpga_optimize=1, fast_interrupt_redirect=1
-  #   dccm_enable=1, dccm_offset=0x40000
-  #   iccm_enable=1, iccm_size=64, iccm_num_banks=4,
-  #   iccm_offset=0xe000000
-  #   pic_offset=0xc0000
-  #
-  # args below are the VeeRwolf FPGA values that differ from default_mt.
+  veer_eh2_default_config:
+    generator: veer_eh2_config
+    position: first
+    parameters:
+      args:
+        - -target=default_mt
+        - -unset=assert_on
+        - -set=reset_vec=0x80000000
+        - -set=fpga_optimize=1
+
   veer_eh2_nexys4_config:
     generator: veer_eh2_config
     position: first
@@ -348,6 +399,7 @@ generate:
       args:
         - -target=default_mt
         - -unset=assert_on
+        - -set=fpga_optimize=1
         - -set=dccm_size=32
         - -set=dccm_num_banks=4
         - -set=icache_enable=0
@@ -422,6 +474,44 @@ generate:
         ram:
           offset : 0x00000000
           size   : 0x08000000 #128MiB
+
+  intercon_genesys2:
+    generator: axi_intercon_gen
+    parameters:
+      masters:
+        ifu:
+          id_width : 3
+          read_only : true
+        lsu:
+          id_width : 4
+        sb:
+          id_width : 1
+      slaves:
+        io:
+          offset : 0x80000000
+          size   : 0x00004000
+        ram:
+          offset : 0x00000000
+          size   : 0x40000000 #1GiB Genesys2 DDR3 System RAM
+
+  intercon_genesys2_eh2:
+    generator: axi_intercon_gen
+    parameters:
+      masters:
+        ifu:
+          id_width : 4
+          read_only : true
+        lsu:
+          id_width : 4
+        sb:
+          id_width : 1
+      slaves:
+        io:
+          offset : 0x80000000
+          size   : 0x00004000
+        ram:
+          offset : 0x00000000
+          size   : 0x40000000 #1GiB Genesys2 DDR3 System RAM
 
   veer_eh1_default_config:
     generator: veer_eh1_config

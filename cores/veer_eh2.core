@@ -1,7 +1,7 @@
 CAPI=2:
 
 name : chipsalliance.org:cores:VeeR_EH2:1.4
-description : VeeR EH2 1.4 RISC-V Core with the VeeRwolf Nexys A7 configuration
+description : VeeR EH2 1.4 RISC-V Core with the VeeRwolf FPGA configuration
 
 filesets:
   rtl:
