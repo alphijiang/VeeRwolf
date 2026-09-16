@@ -1,5 +1,5 @@
 create_clock -add -name sys_clk_pin -period 10.00 -waveform {0 5} [get_ports {clk}];
-create_clock -add -name jtag_tck_pin -period 100.00 -waveform {0 50} [get_ports {JTAG_TCK}];
+create_clock -add -name jtag_tck_pin -period 100.00 -waveform {0 50} [get_ports {i_jtag_tck}];
 
 # Nexys A7 / Nexys 4 DDR configuration bank is powered from 3.3 V.
 set_property CFGBVS VCCO [current_design]
@@ -8,7 +8,7 @@ set_property CONFIG_VOLTAGE 3.3 [current_design]
 # Pmod JC1 (K1) is not a clock-capable input. Keep the low-speed FT232H TCK
 # on fabric routing instead of inferring a BUFG fed through a non-dedicated
 # clock path.
-set_property CLOCK_BUFFER_TYPE NONE [get_ports {JTAG_TCK}]
+set_property CLOCK_BUFFER_TYPE NONE [get_ports {i_jtag_tck}]
 
 # The official Cores-VeeR DMI wrapper holds its address/data payload while its
 # rden/wren request strobes are synchronized into clk_core. JTAG TCK and
@@ -98,7 +98,7 @@ set_property -dict { PACKAGE_PIN V12   IOSTANDARD LVCMOS33 } [get_ports { o_led[
 set_property -dict { PACKAGE_PIN V11   IOSTANDARD LVCMOS33 } [get_ports { o_led[15] }]
 
 ## External JTAG on Pmod JC
-set_property -dict { PACKAGE_PIN K1    IOSTANDARD LVCMOS33 } [get_ports { JTAG_TCK }]; # JC1
-set_property -dict { PACKAGE_PIN F6    IOSTANDARD LVCMOS33 } [get_ports { JTAG_TDI }]; # JC2
-set_property -dict { PACKAGE_PIN J2    IOSTANDARD LVCMOS33 } [get_ports { JTAG_TDO }]; # JC3
-set_property -dict { PACKAGE_PIN G6    IOSTANDARD LVCMOS33 } [get_ports { JTAG_TMS }]; # JC4
+set_property -dict { PACKAGE_PIN K1    IOSTANDARD LVCMOS33 } [get_ports { i_jtag_tck }]; # JC1
+set_property -dict { PACKAGE_PIN F6    IOSTANDARD LVCMOS33 } [get_ports { i_jtag_tdi }]; # JC2
+set_property -dict { PACKAGE_PIN J2    IOSTANDARD LVCMOS33 } [get_ports { o_jtag_tdo }]; # JC3
+set_property -dict { PACKAGE_PIN G6    IOSTANDARD LVCMOS33 } [get_ports { i_jtag_tms }]; # JC4
