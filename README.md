@@ -204,6 +204,51 @@ UART and JTAG communication is tunneled through the microUSB port on the board a
 
 An SPI controller is connected to the on-board SPI Flash. This can be used for storing data such as program to be loaded into memory during boot. The [SPI uImage loader](#spi-uimage-loader) chapter goes into more detail on how to prepare, write and boot a program stored in SPI Flash
 
+## VeeRwolf Genesys
+
+VeeRwolf Genesys is a version of the VeeRwolf SoC created for the Digilent Genesys2 board. It uses the on-board 1GB DDR3 for RAM, has GPIO connected to LED, supports booting from SPI Flash and uses the microUSB port for UART and FPGA programming. In this integration, CPU debug JTAG is exposed on Pmod JC for EH1, EH2 and EL2 through the official Cores-VeeR `dmi_wrapper`. The default bootloader for the VeeRwolf Nexys target will attempt to load a program stored in SPI Flash by default.
+
+![](veerwolf_genesys.png)
+
+*VeeRwolf Genesys K7 target*
+
+### I/O
+
+The active I/O consists of LEDs, switches, the microUSB connector for UART,
+FPGA programming and power, plus Pmod JC for external CPU debug JTAG.
+
+#### LEDs
+
+16 LEDs are controlled by memory-mapped GPIO at address 0x80001010-0x80001011
+
+#### Switches
+
+16 Switches are mapped GPIO addresses at 0x80001012-0x80001013
+
+During boot up, the two topmost switches (sw14, sw15) control the boot mode.
+
+| sw15 | sw14 | Boot mode                  |
+| ---- | ---- | -------------------------- |
+|  off |  off | Boot from SPI Flash        |
+|  off |   on | Boot from serial           |
+|   on |  off | Boot from address 0 in RAM |
+|   on |   on | Boot from ICCM at `0xEE000000` |
+
+*Note: Switch 0 has a dual purpose and selects whether to output serial communication from the SoC (0=off) or from the embedded self-test program in the DDR2 controller (1=on).*
+
+#### micro USB
+
+The microUSB port provides UART, FPGA programming and board power. The serial
+port appears as `/dev/ttyUSB0`, `/dev/ttyUSB1` or similar; a terminal emulator
+can connect at 115200 baud. CPU debug does not use the on-board BSCAN tunnel in
+this integration; connect the external FT232H to Pmod JC as described in the
+[debugging](#debugging) chapter.
+
+#### SPI Flash
+
+An SPI controller is connected to the on-board SPI Flash. This can be used for storing data such as program to be loaded into memory during boot. The [SPI uImage loader](#spi-uimage-loader) chapter goes into more detail on how to prepare, write and boot a program stored in SPI Flash
+
+
 # How to use
 
 ## Prerequisites
