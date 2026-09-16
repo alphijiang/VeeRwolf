@@ -1,0 +1,26 @@
+CAPI=2:
+
+name : :veerwolf:litedram_genesys2:0
+description : Pre-generated LiteDRAM DDR3 core for Digilent Genesys 2 (AXI64)
+
+filesets:
+  common:
+    files:
+      - litedram_genesys2_top.v
+    file_type : verilogSource
+
+  core:
+    files:
+      - litedram_genesys2_core_rom.init  : {file_type : user, copyto : litedram_genesys2_core_rom.init}
+      - litedram_genesys2_core_sram.init : {file_type : user, copyto : litedram_genesys2_core_sram.init}
+      - litedram_genesys2_core.v
+    file_type : verilogSource
+    depend : [">=::serv:1.0.2"]
+
+  xdc:
+    files:
+      - litedram.xdc : {file_type : xdc}
+
+targets:
+  default:
+    filesets : [common, core, xdc]
