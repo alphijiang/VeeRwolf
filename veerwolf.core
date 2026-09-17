@@ -156,7 +156,7 @@ targets:
       - "tool_verilator? (verilator_waiver)"
 
     generate:
-      - "cpu_eh2? (veer_eh2_genesys2_config)"
+      - "cpu_eh2? (veer_eh2_default_config)"
       - "cpu_eh2? (intercon_eh2)"
       - "!cpu_eh2? (intercon)"
       - "!cpu_eh2? (cpu_el2? (veer_el2_default_config))"
@@ -179,7 +179,7 @@ targets:
       - core
       - bootrom
       - "tool_verilator? (verilator_waiver)"
-    generate : [veer_eh2_genesys2_config, intercon_eh2, wb_intercon]
+    generate : [veer_eh2_default_config, intercon_eh2, wb_intercon]
     parameters : [rom_init_file]
     tools:
       verilator:
@@ -202,7 +202,7 @@ targets:
       - "tool_verilator? (verilator_waiver)"
 
     generate:
-      - "cpu_eh2? (veer_eh2_genesys2_config)"
+      - "cpu_eh2? (veer_eh2_default_config)"
       - "cpu_eh2? (intercon_eh2)"
       - "!cpu_eh2? (intercon)"
       - "!cpu_eh2? (cpu_el2? (veer_el2_default_config))"
@@ -245,7 +245,7 @@ targets:
       - bootrom
       - "tool_verilator? (verilator_tb)"
       - "tool_verilator? (verilator_waiver)"
-    generate : [veer_eh2_genesys2_config, intercon_eh2, wb_intercon]
+    generate : [veer_eh2_default_config, intercon_eh2, wb_intercon]
     parameters : [SIMPRINT=true, jtag_vpi_enable, ram_init_file=hello.vh, rom_init_file, signature, timeout, vcd]
     tools:
       verilator:
@@ -382,8 +382,6 @@ generate:
         - -set=dma_buf_depth=2
         - -set=div_bit=1
 
-  # Independent Nexys A7 profile for this archive's nexys_a7 target. It starts
-  # with the same values, but changes here do not affect Genesys2 targets.
   veer_eh2_nexys_a7_config:
     generator: veer_eh2_config
     position: first
